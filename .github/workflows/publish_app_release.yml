@@ -52,7 +52,7 @@ jobs:
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: assets/app_version.json
+          path: simple_live_app/assets/app_version.json
 
       # 上传至Release (只上传Windows ZIP文件)
       - name: Upload Release
