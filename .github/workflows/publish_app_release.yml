@@ -1,11 +1,13 @@
 name: app-build-action
 
-# 推送Tag时触发
 on:
   workflow_dispatch:
-  # push:
-  #   tags:
-  #     - "v*"
+    # 添加一个输入框，用于在运行时手动输入版本号
+    inputs:
+      version:
+        description: '请输入版本号 (例如: v1.2.3)'
+        required: true
+        type: string
 
 jobs:
   # 只打包Windows
@@ -40,30 +42,25 @@ jobs:
       - name: Install flutter_distributor
         run: dart pub global activate flutter_distributor
 
-      # build Windows ZIP (只生成ZIP，移除MSIX)
+      # build Windows ZIP
       - name: Build Windows ZIP
         run: |
           cd simple_live_app
-          # 只指定生成 zip 格式
           flutter_distributor package --platform windows --targets zip --skip-clean
 
-      # 读取版本信息
-      - name: Read version
-        id: version
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: simple_live_app/assets/app_version.json
-
-      # 上传至Release (只上传Windows ZIP文件)
-      - name: Upload Release
+      # 上传至Release
+      - name: Create and Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
-          body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
-          prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
+          # 使用你在手动运行时输入的版本号
+          name: Release ${{ github.event.inputs.version }}
+          # 这个 action 会自动为你创建一个同名的 Git Tag
+          tag_name: ${{ github.event.inputs.version }}
+
+          prerelease: false 
+
           token: ${{ secrets.TOKEN }}
           文件: |
-            simple_live_app/build/dist/*/*.zip # 确保只上传zip文件
-
+            simple_live_app/build/dist/*/*.zip
       # 完成
       - run: echo "🍏 Windows job's status is ${{ job.status }}."
