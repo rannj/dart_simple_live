@@ -52,8 +52,7 @@ jobs:
         with:
           name: Release ${{ github.event.inputs.version }}
           tag_name: ${{ github.event.inputs.version }}
-          generate_release_notes: true
-          prerlease: false
+          generate_release_notes: false
           # 修正：使用 GITHUB_TOKEN
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
