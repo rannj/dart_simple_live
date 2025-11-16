@@ -2,7 +2,6 @@ name: app-build-action
 
 on:
   workflow_dispatch:
-    # 添加一个输入框，用于在运行时手动输入版本号
     inputs:
       version:
         description: '请输入版本号 (例如: v1.2.3)'
@@ -10,57 +9,54 @@ on:
         type: string
 
 jobs:
-  # 只打包Windows
   build-windows:
     runs-on: windows-latest
     permissions:
+      # 这个权限是使用 GITHUB_TOKEN 创建 Release 所必需的
       contents: write
     steps:
-      # 签出代码
       - uses: actions/checkout@v4
         with:
           ref: master
 
-      # 设置Flutter环境
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.22.x"
           cache: true
 
-      # 启用Windows Desktop支持
       - name: Enable Flutter Desktop
         run: flutter config --enable-windows-desktop
 
-      # 更新Flutter的packages
       - name: Restore Packages
         run: |
           cd simple_live_app
           flutter pub get
 
-      # 设置flutter_distributor环境
       - name: Install flutter_distributor
         run: dart pub global activate flutter_distributor
 
-      # build Windows ZIP
       - name: Build Windows ZIP
         run: |
           cd simple_live_app
           flutter_distributor package --platform windows --targets zip --skip-clean
 
-      # 上传至Release
+      - name: Upload Windows ZIP to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: simple_live_app/build/dist/*/*.zip
+
       - name: Create and Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          # 使用你在手动运行时输入的版本号
           name: Release ${{ github.event.inputs.version }}
-          # 这个 action 会自动为你创建一个同名的 Git Tag
           tag_name: ${{ github.event.inputs.version }}
-
-          prerelease: false 
-
-          token: ${{ secrets.TOKEN }}
-          文件: |
+          generate_release_notes: true
+          prerlease: false
+          # 修正：使用 GITHUB_TOKEN
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
             simple_live_app/build/dist/*/*.zip
-      # 完成
+
       - run: echo "🍏 Windows job's status is ${{ job.status }}."
